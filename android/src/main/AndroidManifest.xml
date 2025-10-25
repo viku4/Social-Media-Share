@@ -5,7 +5,7 @@
         <!-- FileProvider for sharing images -->
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="com.example.social_media_share.fileprovider"
+            android:authorities="${applicationId}.social_media_share.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data
