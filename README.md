@@ -8,6 +8,31 @@ A Flutter plugin for sharing text and images to social media platforms.
 
 ## Usage
 ```dart
+
+///  Add Line AndroidManifest.xml Application 
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="com.example.social_media_share_example.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true"
+            tools:replace="android:authorities">
+
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"
+                tools:replace="android:resource"/>
+        </provider>
+
+
+/// Add android\app\src\main\res\xml\file_paths.xml
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <external-path name="external_files" path="." />
+    <cache-path name="shared_images" path="." />
+
+</paths>
+
+
 import 'package:social_media_share/social_media_share.dart';
 
 SocialMediaShare(
