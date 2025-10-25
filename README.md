@@ -12,7 +12,7 @@ A Flutter plugin for sharing text and images to social media platforms.
 ///  Add Line AndroidManifest.xml Application 
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="com.example.social_media_share_example.fileprovider"
+            android:authorities="{Add Package Name}.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true"
             tools:replace="android:authorities">
