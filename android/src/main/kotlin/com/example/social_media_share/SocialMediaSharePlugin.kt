@@ -149,19 +149,6 @@ class SocialMediaSharePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
 
-        // Copy caption to clipboard
-        if (!text.isNullOrEmpty()) {
-            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-            val clip = android.content.ClipData.newPlainText("Instagram Caption", text)
-            clipboard.setPrimaryClip(clip)
-
-            Toast.makeText(
-                context,
-                "Caption copied! Paste it in Instagram before posting.",
-                Toast.LENGTH_SHORT
-            ).show()
-        }
-
         // Check Instagram is installed
         val isInstagramInstalled = try {
             context.packageManager.getPackageInfo("com.instagram.android", 0)
@@ -212,20 +199,6 @@ class SocialMediaSharePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             // Remove setPackage and use chooser to avoid hijacking the task
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-
-        // Copy caption text to clipboard
-        if (!text.isNullOrEmpty()) {
-            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-            val clip = android.content.ClipData.newPlainText("Instagram Caption", text)
-            clipboard.setPrimaryClip(clip)
-
-            Toast.makeText(
-                context,
-                "Caption copied! Paste it in Instagram before posting.",
-                Toast.LENGTH_SHORT
-            ).show()
-        }
-
         // Check if Instagram is installed
         val isInstagramInstalled = try {
             context.packageManager.getPackageInfo("com.instagram.android", 0)

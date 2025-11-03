@@ -1,5 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'social_media_share_method_channel.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 /// Supported social media platforms
@@ -9,6 +12,7 @@ enum SocialPlatform { whatsapp, facebook, instagram, share_via, copy_link }
 class SocialMediaShare extends StatelessWidget {
   final List<SocialPlatform> platforms;
   final String shareText;
+  final bool isImageLink;
   final String shareImage;
   final EdgeInsetsGeometry? iconPadding;
   final EdgeInsetsGeometry? iconMargin;
@@ -16,7 +20,7 @@ class SocialMediaShare extends StatelessWidget {
   final double spacing;
   final TextStyle defaultLabelStyle;
   final Color? defaultLabelColors;
-  final double? defaultLabelSizes;
+  final double? defaultIconSizes;
 
   final Map<SocialPlatform, Widget>? customIcons;
   final Map<SocialPlatform, Widget>? customLabels;
@@ -36,9 +40,10 @@ class SocialMediaShare extends StatelessWidget {
     this.customIcons,
     this.customLabels,
     this.defaultLabelColors = Colors.black,
-    this.defaultLabelSizes = 20,
     this.iconPadding,
     this.iconMargin,
+    this.isImageLink = true,
+    this.defaultIconSizes,
   });
 
   @override
@@ -47,51 +52,80 @@ class SocialMediaShare extends StatelessWidget {
       SocialPlatform.whatsapp: FaIcon(
         FontAwesomeIcons.whatsapp,
         color: Colors.green,
-        size: direction == Axis.horizontal ? 30 : 50,
+        size: defaultIconSizes != null
+            ? defaultIconSizes
+            : direction == Axis.horizontal
+            ? 30
+            : 50,
       ),
       SocialPlatform.facebook: FaIcon(
         FontAwesomeIcons.facebook,
         color: Colors.blue,
-        size: direction == Axis.horizontal ? 30 : 50,
+        size: defaultIconSizes != null
+            ? defaultIconSizes
+            : direction == Axis.horizontal
+            ? 30
+            : 50,
       ),
       SocialPlatform.instagram: FaIcon(
         FontAwesomeIcons.instagram,
         color: Colors.purple,
-        size: direction == Axis.horizontal ? 30 : 50,
+        size: defaultIconSizes != null
+            ? defaultIconSizes
+            : direction == Axis.horizontal
+            ? 30
+            : 50,
       ),
       SocialPlatform.share_via: FaIcon(
         FontAwesomeIcons.share,
         color: Colors.black,
-        size: direction == Axis.horizontal ? 30 : 50,
+        size: defaultIconSizes != null
+            ? defaultIconSizes
+            : direction == Axis.horizontal
+            ? 30
+            : 50,
       ),
       SocialPlatform.copy_link: FaIcon(
         FontAwesomeIcons.link,
         color: Colors.grey,
-        size: direction == Axis.horizontal ? 30 : 50,
+        size: defaultIconSizes != null
+            ? defaultIconSizes
+            : direction == Axis.horizontal
+            ? 30
+            : 50,
       ),
     };
-    return Flex(
-      direction: direction,
-      spacing: spacing,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: platforms.map((platform) {
-        final String label = _capitalize(platform.toString().split('.').last);
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            InkWell(
-              onTap: () => onClick(platform, shareText, shareImage, context),
-              child: Container(
-                padding: iconPadding ?? EdgeInsets.all(10),
-                margin: iconMargin ?? EdgeInsets.all(5),
-                child: customIcons?[platform] ?? defaultIcons[platform],
+    return SingleChildScrollView(
+      scrollDirection: direction,
+      child: Flex(
+        direction: direction,
+        spacing: spacing,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: platforms.map((platform) {
+          final String label = _capitalize(platform.toString().split('.').last);
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              InkWell(
+                onTap: () => onClick(
+                  platform,
+                  shareText,
+                  shareImage,
+                  isImageLink,
+                  context,
+                ),
+                child: Container(
+                  padding: iconPadding ?? EdgeInsets.all(10),
+                  margin: iconMargin ?? EdgeInsets.all(5),
+                  child: customIcons?[platform] ?? defaultIcons[platform],
+                ),
               ),
-            ),
 
-            customLabels?[platform] ?? Text(label, style: defaultLabelStyle),
-          ],
-        );
-      }).toList(),
+              customLabels?[platform] ?? Text(label, style: defaultLabelStyle),
+            ],
+          );
+        }).toList(),
+      ),
     );
   }
 
@@ -99,6 +133,40 @@ class SocialMediaShare extends StatelessWidget {
 }
 
 Future onClick(
+  SocialPlatform platform,
+  String shareText,
+  String shareImagePath,
+  bool isImageLink,
+  BuildContext context,
+) async {
+  try {
+    String? localImagePath = shareImagePath;
+    // If image is a link, download it and convert to file
+    if (isImageLink) {
+      final tempDir = await getTemporaryDirectory();
+      final fileName =
+          "shared_image_${DateTime.now().millisecondsSinceEpoch}.jpg";
+      final filePath = "${tempDir.path}/$fileName";
+      final response = await http.get(Uri.parse(shareImagePath));
+
+      if (response.statusCode == 200) {
+        final file = File(filePath);
+        await file.writeAsBytes(response.bodyBytes);
+        localImagePath = file.path;
+        debugPrint("Image downloaded to: $localImagePath");
+      } else {
+        debugPrint("Failed to download image from URL.");
+      }
+    }
+
+    // Call native sharing logic with local file path
+    await _shareToPlatform(platform, shareText, localImagePath, context);
+  } catch (e) {
+    debugPrint("Error sharing: $e");
+  }
+}
+
+Future _shareToPlatform(
   SocialPlatform platform,
   String shareText,
   String shareImagePath,

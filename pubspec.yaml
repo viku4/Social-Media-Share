@@ -1,6 +1,6 @@
 name: social_media_share
 description: A Flutter plugin for sharing text and images
-version: 0.0.5
+version: 0.0.6
 homepage: https://github.com/viku4/Social-Media-Share.git
 
 # publish_to: none
@@ -13,6 +13,8 @@ dependencies:
   flutter:
     sdk: flutter
   font_awesome_flutter: ^10.12.0
+  http: ^1.5.0
+  path_provider: ^2.1.5
 
 flutter:
   plugin:
