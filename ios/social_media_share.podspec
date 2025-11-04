@@ -4,12 +4,12 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'social_media_share'
-  s.version          = '0.0.1'
+  s.version          = '0.0.6'
   s.summary          = 'A new Flutter plugin project.'
-  s.description      = <<-DESC
+  s.description      = 'A Flutter plugin for sharing text and images'
 A new Flutter plugin project.
                        DESC
-  s.homepage         = 'http://example.com'
+  s.homepage         = 'https://github.com/viku4/Social-Media-Share.git'
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Your Company' => 'email@example.com' }
   s.source           = { :path => '.' }
