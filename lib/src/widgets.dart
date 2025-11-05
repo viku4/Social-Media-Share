@@ -13,6 +13,7 @@ class SocialMediaShare extends StatelessWidget {
   final List<SocialPlatform> platforms;
   final String shareText;
   final bool isImageLink;
+  final bool showText;
   final String shareImage;
   final EdgeInsetsGeometry? iconPadding;
   final EdgeInsetsGeometry? iconMargin;
@@ -44,6 +45,7 @@ class SocialMediaShare extends StatelessWidget {
     this.iconMargin,
     this.isImageLink = true,
     this.defaultIconSizes,
+    this.showText = true,
   });
 
   @override
@@ -103,26 +105,24 @@ class SocialMediaShare extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: platforms.map((platform) {
           final String label = _capitalize(platform.toString().split('.').last);
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              InkWell(
-                onTap: () => onClick(
-                  platform,
-                  shareText,
-                  shareImage,
-                  isImageLink,
-                  context,
-                ),
-                child: Container(
-                  padding: iconPadding ?? EdgeInsets.all(10),
-                  margin: iconMargin ?? EdgeInsets.all(5),
-                  child: customIcons?[platform] ?? defaultIcons[platform],
-                ),
-              ),
+          return InkWell(
+            onTap: () =>
+                onClick(platform, shareText, shareImage, isImageLink, context),
+            child: Container(
+              padding: iconPadding ?? EdgeInsets.all(5),
+              margin: iconMargin ?? EdgeInsets.all(5),
 
-              customLabels?[platform] ?? Text(label, style: defaultLabelStyle),
-            ],
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                spacing: spacing,
+                children: [
+                  ?customIcons?[platform] ?? defaultIcons[platform],
+                  if (showText)
+                    customLabels?[platform] ??
+                        Text(label, style: defaultLabelStyle),
+                ],
+              ),
+            ),
           );
         }).toList(),
       ),

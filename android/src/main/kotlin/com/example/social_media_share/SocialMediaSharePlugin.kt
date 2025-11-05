@@ -98,40 +98,67 @@ class SocialMediaSharePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
 
     // ---------------- Facebook Share ----------------
     private fun shareToFacebook(text: String?, filePath: String?) {
-        val intent = Intent(Intent.ACTION_SEND)
-        intent.type = if (!filePath.isNullOrEmpty() && File(filePath).exists()) "image/*" else "text/plain"
-        text?.let { intent.putExtra(Intent.EXTRA_TEXT, it) }
+        val hasImage = !filePath.isNullOrEmpty() && File(filePath).exists()
 
-        if (!filePath.isNullOrEmpty() && File(filePath).exists()) {
-            val uri = FileProvider.getUriForFile(
-                context,
-                context.packageName + ".fileprovider",
-                File(filePath)
-            )
-            intent.putExtra(Intent.EXTRA_STREAM, uri)
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = if (hasImage) "image/*" else "text/plain"
+            text?.let { putExtra(Intent.EXTRA_TEXT, it) }
+
+            if (hasImage) {
+                val file = File(filePath!!)
+                val uri = FileProvider.getUriForFile(
+                    context,
+                    context.packageName + ".fileprovider",
+                    file
+                )
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
 
-        intent.setPackage("com.facebook.katana")
+        // Facebook app package names (normal + lite)
+        val facebookPackages = listOf(
+            "com.facebook.katana",  // Main Facebook
+            "com.facebook.lite"     // Facebook Lite
+        )
 
-        if (intent.resolveActivity(context.packageManager) != null) {
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(intent)
+        // Find which one is installed
+        val installedPackage = facebookPackages.firstOrNull { pkg ->
+            try {
+                context.packageManager.getPackageInfo(pkg, 0)
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        if (installedPackage != null) {
+            intent.setPackage(installedPackage)
+            try {
+                context.startActivity(intent)
+            } catch (e: Exception) {
+                // fallback if direct share fails
+                val chooser = Intent.createChooser(intent, "Share to Facebook")
+                chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(chooser)
+            }
         } else {
+            // No Facebook app installed → use Facebook web share link
             val fbWebUrl = Uri.parse("https://www.facebook.com/sharer/sharer.php?u=${Uri.encode(text)}")
             val webIntent = Intent(Intent.ACTION_VIEW, fbWebUrl)
             webIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(webIntent)
         }
     }
-
     // ---------------- Instagram Share ----------------
     private fun shareToInstagram(text: String?, filePath: String?) {
         val hasImage = !filePath.isNullOrEmpty() && File(filePath).exists()
 
-        // Prepare the intent
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = if (hasImage) "image/*" else "text/plain"
+            putExtra(Intent.EXTRA_TEXT, text)
 
             if (hasImage) {
                 val file = File(filePath!!)
@@ -144,30 +171,37 @@ class SocialMediaSharePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
 
-            // Force Instagram
-            setPackage("com.instagram.android")
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
 
-        // Check Instagram is installed
-        val isInstagramInstalled = try {
-            context.packageManager.getPackageInfo("com.instagram.android", 0)
-            true
-        } catch (e: Exception) {
-            false
+        // Package names for Instagram variants
+        val instagramPackages = listOf(
+            "com.instagram.android",       // main Instagram
+            "com.instagram.lite"           // Instagram Lite
+        )
+
+        // Find which one is installed
+        val installedPackage = instagramPackages.firstOrNull { pkg ->
+            try {
+                context.packageManager.getPackageInfo(pkg, 0)
+                true
+            } catch (e: Exception) {
+                false
+            }
         }
 
-        if (isInstagramInstalled) {
+        if (installedPackage != null) {
+            intent.setPackage(installedPackage)
             try {
                 context.startActivity(intent)
             } catch (e: Exception) {
-                // fallback if Instagram can't handle the intent
+                // fallback to chooser if direct share fails
                 val chooser = Intent.createChooser(intent, "Share to Instagram")
                 chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 context.startActivity(chooser)
             }
         } else {
-            // Instagram not installed → Play Store
+            // Neither app installed → open Play Store link
             val playStoreIntent = Intent(
                 Intent.ACTION_VIEW,
                 Uri.parse("https://play.google.com/store/apps/details?id=com.instagram.android")
@@ -178,12 +212,14 @@ class SocialMediaSharePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
     }
 
 
+
     // ---------------- All Share ----------------
-    private fun shareToAll(text: String?, filePath: String?) {
+    private fun shareToAll( text: String?, filePath: String?) {
         val hasImage = !filePath.isNullOrEmpty() && File(filePath).exists()
 
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = if (hasImage) "image/*" else "text/plain"
+            putExtra(Intent.EXTRA_TEXT, text)
 
             if (hasImage) {
                 val file = File(filePath!!)
@@ -196,32 +232,18 @@ class SocialMediaSharePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
 
-            // Remove setPackage and use chooser to avoid hijacking the task
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        // Check if Instagram is installed
-        val isInstagramInstalled = try {
-            context.packageManager.getPackageInfo("com.instagram.android", 0)
-            true
-        } catch (e: Exception) {
-            false
-        }
 
-        if (isInstagramInstalled) {
-            // Use a chooser so Instagram opens but your app can come back after sharing
-            val chooser = Intent.createChooser(intent, "Share to Instagram")
-            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(chooser)
-        } else {
-            // Instagram not installed → open Play Store
-            val playStoreIntent = Intent(
-                Intent.ACTION_VIEW,
-                Uri.parse("https://play.google.com/store/apps/details?id=com.instagram.android")
-            )
-            playStoreIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(playStoreIntent)
-        }
+        // Create a chooser so user can select any compatible app
+        val chooser = Intent.createChooser(intent, "Share via")
+
+        // Required for starting from a non-activity context (e.g., Flutter plugin)
+        chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+        context.startActivity(chooser)
     }
+
 
 
     // ---------------- Copy Link ----------------
